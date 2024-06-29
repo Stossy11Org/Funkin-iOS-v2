@@ -1,0 +1,89 @@
+import funkin.play.event.SongEvent;
+import funkin.play.PlayState;
+
+class SillyEvents extends SongEvent {
+    function new() {
+        super('SillyEvents');
+    }
+
+    var game;
+
+    override function handleEvent(data) {
+        if (PlayState.instance == null || PlayState.instance.currentStage == null) return;
+        if (PlayState.instance.isMinimalMode) return;
+        game = PlayState.instance;
+
+        //var eventType = Std.parseInt(data.value.sillyType);
+        //var val1 = Std.parseFloat(data.value.val1);
+        //var val2 = Std.parseFloat(data.value.val2);
+    }
+
+    override function getEventSchema() {
+        return [
+            {
+                name: "sillyType",
+                title: "Silly Event Type",
+                defaultValue: 0,
+                type: "enum",
+                keys: [
+                    "ill make" => 0,
+                    "myway vid" => 1,
+                    "mirror break" => 2,
+                    "lyrics" => 3,
+                    "hide huds" => 4,
+                    "show middlescroll strum" => 5,
+                    "blackscreen" => 6,
+                    "hurt" => 7,
+                    "icon change" => 8,
+                    "zoom add" => 9,
+                    "bop camera" => 10,
+                    "silly done" => 11,
+                    "instant blackscreen" => 12,
+                    "zoom set (not rlly)" => 13,
+                ]
+            },
+            {
+                name: "intVal",
+                title: "Integer 1",
+                defaultValue: 0,
+                type: "integer"
+            },
+            {
+                name: "intVal2",
+                title: "Integer 2",
+                defaultValue: 0,
+                type: "integer"
+            },
+            {
+                name: "floatVal",
+                title: "Float 1",
+                defaultValue: 0,
+                step: 0.005,
+                type: "float"
+            },
+            {
+                name: "floatVal2",
+                title: "Float 2",
+                defaultValue: 0,
+                step: 0.005,
+                type: "float"
+            },
+            {
+                name: "stringVal",
+                title: "String 1",
+                defaultValue: "",
+                type: "string"
+            },
+            {
+                name: "stringVal2",
+                title: "String 2",
+                defaultValue: "",
+                type: "string"
+            }
+        ];
+    }
+
+    override function getTitle() {
+        return "Silly Events";
+    }
+}

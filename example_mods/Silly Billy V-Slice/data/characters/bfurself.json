@@ -1,0 +1,78 @@
+{
+  "version": "1.0.0",
+  "name": "bf-urself",
+  "renderType": "multisparrow",
+  "assetPath": "characters/Yourself_BF_Assets",
+  "flipX": true,
+	"scale": 0.95,
+  "singTime": 6.1,
+  "animations": [
+    {
+      "name": "idle",
+      "prefix": "BFIdle0",
+      "offsets": [0, 0]
+    },
+    {
+      "name": "singLEFT",
+      "prefix": "BFLeft0",
+      "offsets": [83, -1]
+    },
+    {
+      "name": "singDOWN",
+      "prefix": "BFDown0",
+      "offsets": [-26, -59]
+    },
+    {
+      "name": "singUP",
+      "prefix": "BFUp0",
+      "offsets": [-56, 65]
+    },
+    {
+      "name": "singRIGHT",
+      "prefix": "BFRight0",
+      "offsets": [-63, 1]
+    },
+    {
+      "name": "singLEFT-alt",
+      "prefix": "BFLeftALT",
+      "offsets": [80, 0]
+    },
+    {
+      "name": "singDOWN-alt",
+      "prefix": "BFDownALT",
+      "offsets": [107, 125]
+    },
+    {
+      "name": "singUP-alt",
+      "prefix": "BFUpALT",
+      "offsets": [37, 70]
+    },
+    {
+      "name": "singRIGHT-alt",
+      "prefix": "BFRightALT",
+      "offsets": [-30, 6]
+    },
+    {
+      "name": "firstDeath",
+      "prefix": "BF dies",
+      "assetPath": "characters/BOYFRIEND",
+      "scale": 1.25,
+      "offsets": [-37, 11]
+    },
+    {
+      "name": "deathLoop",
+      "prefix": "BF Dead Loop",
+      "assetPath": "characters/BOYFRIEND",
+      "scale": 1.25,
+      "looped": true,
+      "offsets": [-37, 5]
+    },
+    {
+      "name": "deathConfirm",
+      "prefix": "BF Dead confirm",
+      "assetPath": "characters/BOYFRIEND",
+      "scale": 1.25,
+      "offsets": [-37, 69]
+    }
+  ]
+}

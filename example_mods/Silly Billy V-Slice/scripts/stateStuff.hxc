@@ -1,0 +1,50 @@
+import funkin.play.PlayStatePlaylist;
+import funkin.play.PlayState;
+import funkin.ui.freeplay.FreeplayState;
+import funkin.ui.transition.StickerSubState;
+import funkin.modding.module.Module;
+import flixel.FlxG;
+import Std;
+
+class StoryModeForSilly extends Module
+{
+	public function new()
+    {
+        super('storyModeForSilly');
+    }  
+
+    function isInFreeplay(){
+        return Std.isOfType(FlxG.state.subState, FreeplayState);
+    }
+
+    function onUpdate(event)
+    {
+        super.onUpdate(event);
+
+        if (isInFreeplay())
+            {
+                if (FreeplayState.rememberedSongId == 'silly-billy')
+                    PlayStatePlaylist.isStoryMode = true;
+                else
+                    PlayStatePlaylist.isStoryMode = false;
+            }
+    }
+
+    function onSongEnd(event)
+    {
+        super.onSongEnd(event);
+        if (PlayState.instance == null) return;
+
+        if (PlayState.instance.currentSong.id == 'silly-billy')
+            PlayStatePlaylist.isStoryMode = false;
+    }
+    
+    public function onSubStateOpenBegin(event):Void 
+    {
+        super.onSubStateOpenBegin(event);
+        
+        if (Std.isOfType(event.targetState, StickerSubState)) {
+            if (PlayState.instance != null) PlayState.instance.camHUD.filters = [];
+        } 
+    }
+}

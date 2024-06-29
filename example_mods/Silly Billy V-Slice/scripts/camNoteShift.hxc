@@ -1,0 +1,117 @@
+import funkin.play.PlayState;
+import funkin.modding.module.Module;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
+import flixel.FlxG;
+import flixel.util.FlxTimer;
+
+class cameraNoteShift extends Module
+{    
+	public function new()
+    {
+        super('cameraNoteShift');
+    }  
+
+    var game;
+
+    var intensity:Float = 25;
+
+    var focusBF:Bool = false;
+    var focusDad:Bool = false;
+    var zoom:Bool = true;
+    var isSilly:Bool = false;
+
+    var camShiftTimer:FlxTimer = new FlxTimer();
+
+    public function onCountdownStart(event):Void 
+    {
+        super.onCountdownStart(event);
+        if (PlayState.instance == null) return;
+        game = PlayState.instance;
+
+        isSilly = game.currentSong.id == 'silly-billy';
+        
+        focusBF = false;
+        focusDad = false;
+    }
+
+    public function onSongEvent(event):Void 
+    {
+        super.onSongEvent(event);
+
+        if (event.eventData.eventKind == 'FocusCamera' && isSilly) {
+            var ev = event.eventData.value;
+
+            switch (Std.int(ev.char))
+            {
+                case 0:
+                    focusDad = false;
+                    focusBF = true;
+                    trace('zoom to 0.5');
+                    if (zoom)
+                        FlxTween.tween(game, {currentCameraZoom: 0.5}, 1, {ease: FlxEase.quartOut});
+                case 1:
+                    focusDad = true;
+                    focusBF = false;
+                    trace('zoom to 0.625');
+                    if (zoom)
+                        FlxTween.tween(game, {currentCameraZoom: 0.6}, 1, {ease: FlxEase.quartOut});
+            }                
+        }
+
+		if (event.eventData.eventKind == 'SillyEvents') {
+			var ev = event.eventData.value;
+
+			//alt sing when small
+			switch (Std.int(ev.sillyType))
+			{
+                case 4: //hide huds
+                    zoom = false;
+                case 11: //my way done
+                    zoom = true;
+			}                
+		}
+    }
+        
+    function onNoteHit(event:HitNoteScriptEvent):Void
+    {
+        if (isSilly) {
+            if (!event.note.noteData.getMustHitNote() && focusDad)
+                camFollow(event.note.noteData.getDirection());
+            if (event.note.noteData.getMustHitNote() && focusBF)
+                camFollow(event.note.noteData.getDirection());  
+        }      
+
+        super.onNoteHit(event);
+    }
+
+    public function onUpdate(eve):Void {
+        super.onUpdate(eve);
+        if (PlayState.instance == null) return;
+
+        /*
+        if (focusBF && zoom)
+            lerpCamera(0.5);
+        if (focusDad && zoom)
+            lerpCamera(0.625);*/
+    }
+
+    function camFollow(direction:Int):Void
+    {
+        switch(direction)
+        {
+            case 0: 
+                FlxG.camera.targetOffset.x = 0 - intensity;
+            case 1: 
+                FlxG.camera.targetOffset.y = 0 + intensity;
+            case 2: 
+                FlxG.camera.targetOffset.y = 0 - intensity;
+            case 3: 
+                FlxG.camera.targetOffset.x = 0 + intensity;
+        }
+
+        camShiftTimer.start(0.275, () -> {
+            FlxG.camera.targetOffset.set(0,0);
+        }, 1);
+    }
+}

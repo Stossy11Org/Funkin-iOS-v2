@@ -1,0 +1,136 @@
+import funkin.play.character.MultiSparrowCharacter;
+import funkin.play.character.CharacterType;
+import funkin.play.PlayState;
+import funkin.util.Constants;
+import funkin.graphics.adobeanimate.FlxAtlasSprite;
+import funkin.Paths;
+import flixel.util.FlxTimer;
+import Std;
+
+class EvilLookalikeCharacter extends MultiSparrowCharacter {
+	function new() {
+		super('evilLookalike');
+	}
+
+	var singDir:Array<String> = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
+    var lookalikeLyrics:FlxAtlasSprite;
+	var game;
+
+	var isSmall:Bool = false;
+
+	var defaultFocusPoint;
+
+	function onCreate(event)
+	{		
+		super.onCreate(event);	
+		
+		defaultFocusPoint = cameraFocusPoint;
+	}
+	
+	function onCountdownStart(event)
+	{
+		game = PlayState.instance;
+
+        lookalikeLyrics = new FlxAtlasSprite(this.x, this.y, Paths.animateAtlas('lyric'));
+        lookalikeLyrics.offset.set(-715,-475);
+        lookalikeLyrics.zIndex = this.zIndex - 1;
+        lookalikeLyrics.anim.addBySymbol('story_of_yourtalebilly', 'story_of_yourtalebilly', 24, false);
+        lookalikeLyrics.antialiasing = true;
+        game.currentStage.insert(game.currentStage.members.indexOf(game.currentStage.getDad()), lookalikeLyrics);
+		lookalikeLyrics.set_visible(false);	
+
+		game.refresh();
+	
+		super.onCountdownStart(event);	
+	}
+	
+    public function onSongEvent(event):Void 
+	{
+		super.onSongEvent(event);
+
+		if (event.eventData.eventKind == 'SillyEvents') {
+			var ev = event.eventData.value;
+
+			switch (Std.parseInt(ev.sillyType))
+			{
+				case 0: //ill make you say anim
+					lookalikeLyrics.set_visible(true);
+					lookalikeLyrics.anim.play('story_of_yourtalebilly');
+					this.visible = false;
+                case 11: //my way done
+					lookalikeLyrics.set_visible(false);
+					this.visible = true;
+                    
+			}                
+		}
+		
+        if (event.eventData.eventKind == 'PlayAnimation') {
+            var ev = event.eventData.value;
+
+            //alt sing when small
+            switch (Std.string(ev.anim))
+            {
+                case 'shrink': 
+					isSmall = true;
+                    idleSuffix = '-alt';
+                    cameraFocusPoint.y += 325;
+                case 'unshrink': 
+					isSmall = false;
+                    cameraFocusPoint.y -= 150;
+            }                
+        }
+	}
+	
+    public function onSongRetry(event):Void 
+		{
+			super.onSongRetry(event);
+
+			idleSuffix = '';		
+			playAnimation('idle', true, true);	
+			cameraFocusPoint = defaultFocusPoint;
+		}
+	
+	override function onAnimationFinished(name:String) {
+		super.onAnimationFinished(name);
+
+		if (name == 'unshrink') {
+			cameraFocusPoint.y -= 175;
+		}
+	}
+
+	function onNoteHit(event:HitNoteScriptEvent)
+	{
+		if (!event.note.noteData.getMustHitNote() && characterType == CharacterType.DAD) {
+			
+			if (game.health >= 0.1) game.health -= Constants.HEALTH_MISS_PENALTY * 0.3;
+			// Override the hit note animation.
+			switch(event.note.kind) {
+				case 'small':
+					holdTimer = 0;
+					playSingAnimation(event.note.noteData.getDirection(), false, 'alt');
+					return;
+			}
+		}
+		super.onNoteHit(event);	
+	}
+	
+    public function onUpdate(event):Void {
+        super.onUpdate(event);
+
+		if (!isSmall) idleSuffix = '';
+	}
+	
+	public override function playSingAnimation(dir:Int, miss:Bool = false, ?suffix:String = ''):Void
+	{
+	  	var missString:String = '';
+	  	var suffixString:String = '';
+
+	  	if (miss) missString = 'miss';
+		if (suffix != '') suffixString = '-' + suffix;
+
+	  	var anim:String = 'sing' + singDir[dir] + missString + suffixString;
+		
+	  	// force sing animation to play.
+	  	this.playAnimation(anim, true, true);
+	}
+}

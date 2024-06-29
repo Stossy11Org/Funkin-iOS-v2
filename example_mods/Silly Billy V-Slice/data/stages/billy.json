@@ -1,0 +1,75 @@
+{
+  "props": [
+    {
+      "zIndex": 20,
+      "position": [-350, -750],
+      "scale": [1, 1],
+      "animType": "sparrow",
+      "name": "floor",
+      "assetPath": "bg/bgAssets",
+      "scroll": [1, 1],
+      "startingAnimation": "idle",
+      "animations": [
+      {
+        "name": "idle",
+        "prefix": "Silly_floor",
+        "frameRate": 0
+      }
+    ]
+    },
+    {
+      "zIndex": 30,
+      "position": [-400, -750],
+      "scale": [1, 1],
+      "animType": "sparrow",
+      "name": "pillar back",
+      "assetPath": "bg/bgAssets",
+      "scroll": [1, 1],
+      "startingAnimation": "idle",
+      "animations": [
+      {
+        "name": "idle",
+        "prefix": "Silly_idk_1",
+        "frameRate": 0
+      }
+    ]
+    },
+    {
+      "zIndex": 40,
+      "position": [-300, -750],
+      "scale": [1, 1],
+      "animType": "sparrow",
+      "name": "pillar front",
+      "assetPath": "bg/bgAssets",
+      "scroll": [1.15, 1.05],
+      "startingAnimation": "idle",
+      "animations": [
+      {
+        "name": "idle",
+        "prefix": "Silly_idk_2",
+        "frameRate": 0
+      }
+    ]
+    }
+  ],
+  "cameraZoom": 0.625,
+  "version": "1.0.0",
+  "characters": {
+    "bf": {
+      "zIndex": 300,
+      "position": [1600, 1125],
+      "cameraOffsets": [-350, -175]
+    },
+    "dad": {
+      "zIndex": 200,
+      "position": [840, 840],
+      "cameraOffsets": [190, -150]
+    },
+    "gf": {
+      "zIndex": 100,
+      "cameraOffsets": [0, 0],
+      "position": [751.5, 787]
+    }
+  },
+  "name": "Billy"
+}

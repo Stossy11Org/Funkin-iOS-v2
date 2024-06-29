@@ -1,0 +1,280 @@
+import funkin.play.PlayState;
+import funkin.modding.module.Module;
+import funkin.Preferences;
+import flixel.FlxCamera;
+import flixel.FlxCameraFollowStyle;
+import funkin.Paths;
+import flixel.util.FlxTimer;
+import funkin.play.notes.Strumline;
+import flixel.FlxG;
+import flixel.FlxSprite;
+import flixel.addons.display.FlxRuntimeShader;
+import openfl.filters.ShaderFilter;
+import openfl.utils.Assets;
+import StringTools;
+
+class OpponentStrumline extends Module {
+	public function new()
+    {
+        super('opponentStrumline', 1000 - 2);
+    }
+
+    var blueShader = new FlxRuntimeShader(Assets.getText(Paths.frag("blue")), null, 130);
+    var shader = new ShaderFilter(blueShader);
+
+    var game;
+    var cameraNotes:FlxCamera;
+
+    var updateNotes:Bool = true;
+    var isSilly:Bool = false;  
+    var firstLoad:Bool = true;
+    var offset:Float = 150;
+    var oppNotesAlpha:Float = 0.5;
+    
+    var coverLeft:FlxSprite;
+    var coverDown:FlxSprite;
+    var coverUp:FlxSprite;
+    var coverRight:FlxSprite;
+
+    var coverColors:Array<String> = ['Purple', 'Blue', 'Green', 'Red'];
+    var coversName:Array<String> = ['coverLeft','coverDown','coverUp','coverRight'];
+    var covers:Array<FlxSprite> = [];
+
+    
+    public function onCountdownStart(event):Void {
+        super.onCountdownStart(event);
+        if (PlayState.instance == null) return;
+
+        blueShader.setFloat('hue', 1.3);
+        blueShader.setFloat('pix', 0.00001);
+
+        isSilly = PlayState.instance.currentSong.id == 'silly-billy';
+
+        if (isSilly && firstLoad)
+        {
+            game = PlayState.instance;
+
+            cameraNotes = new FlxCamera(0, 0, 1280, 720, 1);
+            cameraNotes.bgColor = 0x000000000;
+            
+            insertFlxCamera(FlxG.cameras.list.indexOf(PlayState.instance.camGame), cameraNotes, false);
+            cameraNotes.follow(PlayState.instance.cameraFollowPoint, FlxCameraFollowStyle.LOCKON, 0.04);
+            cameraNotes.alpha = 0.75;
+
+           game.opponentStrumline.cameras = [cameraNotes];
+           game.opponentStrumline.y = Preferences.downscroll ? game.opponentStrumline.y - 150 :game.opponentStrumline.y - 300;
+           game.opponentStrumline.x += 300;
+           game.opponentStrumline.alpha = oppNotesAlpha;
+           game.opponentStrumline.scale.set(0.9, 0.9);
+           game.opponentStrumline.strumlineNotes.forEach((strum) -> 
+            {
+                strum.x += (strum.direction * 115);
+            });
+
+            setupNoteHoldCoverSprite();
+        }
+    }
+
+    public function onPause(event):Void {
+        super.onPause(event);
+
+        updateNotes = false;
+    }
+
+    public function onResume(event):Void {
+        super.onResume(event);
+
+        updateNotes = true;
+    }
+
+    public function onSongEnd(event):Void 
+    {
+        super.onSongEnd(event);
+
+        if (isSilly) cameraNotes.filters = [];
+    }
+    
+    public function onSongStart(event):Void 
+    {
+        super.onSongStart(event);      
+        
+        firstLoad = false;
+    }
+    
+    public function onNoteIncoming(ev):Void {
+        super.onNoteIncoming(ev);
+        if (PlayState.instance == null) return;
+
+        updateNotes = true;
+
+        if (isSilly) {
+            if (!ev.note.noteData.getMustHitNote()){
+            var strumlineX = game.opponentStrumline.strumlineNotes.members[ev.note.direction].x + 26;
+            ev.note.x = strumlineX;
+            ev.note.scale.set(0.9,0.9);
+                if (ev.note.noteData.length > 0)
+                {
+                    ev.note.holdNoteSprite.x = strumlineX + 27;
+                    ev.note.holdNoteSprite.graphicWidth = ev.note.holdNoteSprite.graphic.width / 6.5 * ev.note.holdNoteSprite.zoom;
+                    ev.note.holdNoteSprite.graphicHeight = ev.note.holdNoteSprite.sustainLength * 0.45 * ev.note.holdNoteSprite.getBaseScrollSpeed();
+                    ev.note.holdNoteSprite.set_alpha(oppNotesAlpha);
+                    ev.note.holdNoteSprite.updateColorTransform();
+                    ev.note.holdNoteSprite.updateClipping();
+                    ev.note.holdNoteSprite.updateHitbox();
+                }
+            }
+        }
+    }
+    public function onSongEvent(event):Void 
+    {
+        super.onSongEvent(event);
+
+		if (event.eventData.eventKind == 'SillyEvents') {
+			var ev = event.eventData.value;
+
+            var floatVal1 = Std.parseFloat(ev.floatVal);
+            var floatVal2 = Std.parseFloat(ev.floatVal2);
+
+			//alt sing when small
+			switch (Std.int(ev.sillyType))
+			{
+                case 2: //mirror brek
+                    cameraNotes.shake(0.01, 0.25);
+                case 11: //my way done
+                    cameraNotes.filters = [shader];
+			}                
+		}
+    }
+
+    override public function onNoteHit(event)
+    {
+        super.onNoteHit(event);
+        if (PlayState.instance == null) return;
+
+        var holdNote = event.note.holdNoteSprite;
+        
+        if (isSilly){
+            if (!event.note.noteData.getMustHitNote()){
+                if (event.note.noteData.length > 0) {
+                    new FlxTimer().start(0.001, function(tmr) // Starts the song without countdown
+                        {
+                            holdNote.set_alpha(oppNotesAlpha);
+                        });
+                    for (i in 0...covers.length) {
+                        if (event.note.noteData.length > 0)
+                            playNoteHoldCover(event.note.noteData.getDirection(), 'start');
+                    }
+                }
+            }
+        }            
+    }
+
+    public function onUpdate(event):Void {
+        super.onUpdate(event);
+        if (PlayState.instance == null) return;
+
+        if (isSilly) {
+            //PlayState.instance.opponentStrumline.visible = true;
+           game.opponentStrumline.noteHoldCovers.visible = false;
+            //PlayState.instance.opponentStrumline.holdNotes.alpha = oppNotesAlpha;
+
+            cameraNotes.zoom = game.camGame.zoom;
+            cameraNotes.targetOffset = FlxG.camera.targetOffset;
+
+            noteHoldCoverUpdate();
+
+            if (!updateNotes) return;
+            for (note in game.opponentStrumline.notes) {
+                var opponentSine = (0.4 + Math.sin((note.y + 160) * 0.006)) * 161;
+                if (Preferences.downscroll)
+                    note.y -= opponentSine;
+                else
+                    note.y += opponentSine;
+                if (note.holdNoteSprite != null && Preferences.downscroll)
+                    note.holdNoteSprite.y -= opponentSine;
+                else if (note.holdNoteSprite != null)
+                    note.holdNoteSprite.y += opponentSine;
+            }
+        }
+    }
+
+    function noteHoldCoverUpdate(){
+        for (index in 0...game.opponentStrumline.strumlineNotes.length) {
+            covers[index].x = game.opponentStrumline.strumlineNotes.members[index].x - 80;
+            covers[index].y = game.opponentStrumline.strumlineNotes.members[index].y - 70;
+
+            var oppStrumNotes = game.opponentStrumline.strumlineNotes;
+            if (oppStrumNotes.members[index].getCurrentAnimation() == "static")
+                covers[index].visible = false;
+        }
+        for (index in 0...covers.length) {
+            if (StringTools.startsWith(covers[index].animation.name, 'holdCoverStart') && covers[index].animation.finished)
+                playNoteHoldCover(index, 'continue');
+        }
+    }
+
+    function playNoteHoldCover(index, state:String) {
+        covers[index].visible = true;
+        switch (state)
+        {
+            case 'start':
+                covers[index].animation.play('holdCoverStart'+coverColors[index]);
+                //trace(coversName[index] + ' playing start cover animation');
+            case 'continue':
+                covers[index].animation.play('holdCover'+coverColors[index]);
+                //trace(coversName[index] + ' playing hold cover animation');
+        }
+    }
+
+    function setupNoteHoldCoverSprite() {
+        coverLeft = new FlxSprite();
+        coverDown = new FlxSprite();
+        coverUp = new FlxSprite();
+        coverRight = new FlxSprite();
+
+        covers = [coverLeft, coverDown, coverUp, coverRight];
+
+        for (i in 0...covers.length) {
+            covers[i].frames = Paths.getSparrowAtlas('holdCover'+ coverColors[i]);
+
+            covers[i].animation.addByPrefix('holdCoverStart'+ coverColors[i], 'holdCoverStart'+ coverColors[i] +'0', 24, false, false, false);
+            covers[i].animation.addByPrefix('holdCover'+ coverColors[i], 'holdCover'+ coverColors[i] + '0', 24, true, false, false);
+            covers[i].animation.addByPrefix('holdCoverEnd'+ coverColors[i], 'holdCoverEnd'+ coverColors[i] + '0', 24, false, false, false);
+
+            covers[i].animation.play('holdCoverEnd'+coverColors[i]);
+            //covers[i].animation.finishCallback = onAnimFinished(covers[i].animation.name);
+            
+            covers[i].cameras = [cameraNotes];
+     
+            game.add(covers[i]);
+
+            covers[i].scale.set(1.15,1.15);
+
+            //covers[i].visible = false;
+        }
+    }
+
+    public function onStateChangeEnd(event):Void 
+	{
+		super.onStateChangeEnd(event);
+
+        if (!Std.isOfType(event.targetState, PlayState)) firstLoad = true;
+	}
+
+    
+    function insertFlxCamera(idx:Int,cam:FlxCamera,defDraw:Bool) {
+        var cameras = [
+            for (i in FlxG.cameras.list) {
+                cam: i,
+                defaultDraw: FlxG.cameras.defaults.contains(i)
+            }
+        ];
+    
+        for(i in cameras) FlxG.cameras.remove(i.cam, false);
+    
+        cameras.insert(idx, {cam: cam,defaultDraw: defDraw});
+    
+        for (i in cameras) FlxG.cameras.add(i.cam,i.defaultDraw);
+    
+    }
+}

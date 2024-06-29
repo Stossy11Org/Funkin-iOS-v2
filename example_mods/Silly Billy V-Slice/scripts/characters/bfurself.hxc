@@ -1,0 +1,53 @@
+import funkin.play.character.MultiSparrowCharacter;
+import funkin.play.character.CharacterType;
+import funkin.play.PlayState;
+import funkin.util.Constants;
+
+class BFUrselfCharacter extends MultiSparrowCharacter {
+	function new() {
+		super('bfurself');
+	}
+
+	function onNoteHit(event:HitNoteScriptEvent)
+		{
+			if (event.note.noteData.getMustHitNote() && characterType == CharacterType.BF) {
+
+				PlayState.instance.health += Constants.HEALTH_SICK_BONUS * 0.075;
+				// Override the hit note animation.
+				switch(event.note.kind) {
+					case 'altbf':
+						holdTimer = 0;
+						this.playSingAnimation(event.note.noteData.getDirection(), false, 'alt');
+						return;
+				}
+			}			
+
+			super.onNoteHit(event);
+		}
+	
+	// script by Nebula_Zorua
+	// please leave this credit in
+	override function set_animOffsets(value:Array<Float>) {
+        if(animOffsets == null)
+            animOffsets = [0, 0];
+        
+        if(animOffsets[0] == value[0] && animOffsets[1] == value[1])
+            return value;
+
+        var scaleX = scale.x / (isPixel ? 6 : 1);
+        var scaleY = scale.y / (isPixel ? 6 : 1);
+
+        var scaledNewX = value[0] * scaleX;
+        var scaledNewY = value[1] * scaleY;
+        var scaledOldX = animOffsets[0] * scaleX;
+        var scaledOldY = animOffsets[1] * scaleY;
+        var xDiff = scaledOldX - scaledNewX;
+        var yDiff = scaledOldY - scaledNewY;
+        x = x + xDiff;
+        y = y + yDiff;
+        animOffsets[0] = value[0];
+        animOffsets[1] = value[1];
+        return value;
+    }
+
+}

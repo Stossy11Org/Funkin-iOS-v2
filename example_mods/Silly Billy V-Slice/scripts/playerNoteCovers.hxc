@@ -1,0 +1,152 @@
+import funkin.play.PlayState;
+import funkin.modding.module.Module;
+import funkin.Paths;
+import funkin.play.notes.Strumline;
+import flixel.FlxSprite;
+import StringTools;
+
+class PlayerNoteCovers extends Module {
+	public function new()
+    {
+        super('playerNoteCovers', 1000 - 1);
+    }
+
+    var game;
+
+    var isSilly:Bool = false;  
+    var firstLoad:Bool = true;
+
+    var offset:Float = 150;
+    
+    var coverLeft:FlxSprite;
+    var coverDown:FlxSprite;
+    var coverUp:FlxSprite;
+    var coverRight:FlxSprite;
+
+    var coverColors:Array<String> = ['Purple', 'Blue', 'Green', 'Red'];
+    var coversName:Array<String> = ['coverLeft','coverDown','coverUp','coverRight'];
+    var covers:Array<FlxSprite> = [];
+    
+    public function onCountdownStart(event):Void {
+        super.onCountdownStart(event);
+        if (PlayState.instance == null) return;
+
+        isSilly = PlayState.instance.currentSong.id == 'silly-billy';
+
+        if (isSilly && firstLoad)
+        {
+            game = PlayState.instance;
+
+            setupNoteHoldCoverSprite();
+        }
+    }
+    
+    public function onSongStart(event):Void 
+    {
+        super.onSongStart(event);      
+        
+        firstLoad = false;
+    }
+
+    override public function onNoteHit(event)
+    {
+        super.onNoteHit(event);
+        if (PlayState.instance == null) return;
+        
+        if (isSilly){
+            if (event.note.noteData.getMustHitNote() && event.note.noteData.length > 0){
+                for (i in 0...covers.length) {
+                    if (event.note.noteData.length > 0)
+                        playNoteHoldCover(event.note.noteData.getDirection(), 'start');
+                }
+            }
+        }            
+    }
+
+    public function onUpdate(event):Void {
+        super.onUpdate(event);
+        if (PlayState.instance == null) return;
+
+        if (isSilly) {
+            game.playerStrumline.noteHoldCovers.visible = false;
+
+            noteHoldCoverUpdate();
+        }
+    }
+
+    function noteHoldCoverUpdate(){
+        for (index in 0...game.playerStrumline.strumlineNotes.length) {
+            covers[index].x = game.playerStrumline.strumlineNotes.members[index].x - 80;
+            covers[index].y = game.playerStrumline.strumlineNotes.members[index].y - 70;
+        }
+        for (index in 0...covers.length) {
+            if (StringTools.startsWith(covers[index].animation.name, 'holdCoverStart') && covers[index].animation.finished)
+                playNoteHoldCover(index, 'continue');
+            if (StringTools.startsWith(covers[index].animation.name, 'holdCoverEnd') && covers[index].animation.finished)
+                covers[index].visible = false;
+            if (covers[index].animation.name == ('holdCover' + coverColors[index]) && game.playerStrumline.strumlineNotes.members[index].getCurrentAnimation() == 'static')
+                covers[index].visible = false;
+
+            for (holdNote in game.playerStrumline.holdNotes.members) {
+                if (holdNote != null && holdNote.hitNote && holdNote.sustainLength <= 0) {
+                    playNoteHoldCover(holdNote.noteDirection, 'end');
+                    if (covers[index].animation.name == ('holdCover' + coverColors[index]) && !game.playerStrumline.isKeyHeld(holdNote.noteDirection))
+                        covers[index].visible = false;
+                }
+                else if (holdNote != null && holdNote.missedNote && (holdNote.fullSustainLength > holdNote.sustainLength)) {
+                    covers[index].visible = false;
+                }
+            }
+        }
+    }
+
+    function playNoteHoldCover(index, state:String) {
+        covers[index].visible = true;
+        switch (state)
+        {
+            case 'start':
+                covers[index].animation.play('holdCoverStart'+coverColors[index]);
+                //trace(coversName[index] + ' playing start cover animation');
+            case 'continue':
+                covers[index].animation.play('holdCover'+coverColors[index]);
+                //trace(coversName[index] + ' playing hold cover animation');
+            case 'end':
+                covers[index].animation.play('holdCoverEnd'+coverColors[index]);
+                //trace(coversName[index] + ' playing hold cover animation');
+        }
+    }
+
+    function setupNoteHoldCoverSprite() {
+        coverLeft = new FlxSprite();
+        coverDown = new FlxSprite();
+        coverUp = new FlxSprite();
+        coverRight = new FlxSprite();
+
+        covers = [coverLeft, coverDown, coverUp, coverRight];
+
+        for (i in 0...covers.length) {
+            covers[i].frames = Paths.getSparrowAtlas('holdCover'+ coverColors[i]);
+
+            covers[i].animation.addByPrefix('holdCoverStart'+ coverColors[i], 'holdCoverStart'+ coverColors[i] +'0', 24, false, false, false);
+            covers[i].animation.addByPrefix('holdCover'+ coverColors[i], 'holdCover'+ coverColors[i] + '0', 24, true, false, false);
+            covers[i].animation.addByPrefix('holdCoverEnd'+ coverColors[i], 'holdCoverEnd'+ coverColors[i] + '0', 24, false, false, false);
+
+            covers[i].animation.play('holdCoverEnd'+coverColors[i]);
+            //covers[i].animation.finishCallback = onAnimFinished(covers[i].animation.name);
+            
+            covers[i].zIndex = 1002 + i;
+            covers[i].cameras = [game.camHUD];
+     
+            game.add(covers[i]);
+
+            covers[i].visible = false;
+        }
+    }
+    
+    public function onStateChangeEnd(event):Void 
+    {
+        super.onStateChangeEnd(event);
+        
+        if (!Std.isOfType(event.targetState, PlayState)) firstLoad = true;
+    }
+}

@@ -1,0 +1,186 @@
+import funkin.play.PlayState;
+import funkin.play.components.HealthIcon;
+import funkin.Preferences;
+import funkin.Paths;
+import flixel.math.FlxMath;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
+import flixel.FlxSprite;
+import flixel.ui.FlxBar;
+import flixel.ui.FlxBarFillDirection;
+import funkin.util.Constants;
+import funkin.graphics.FunkinSprite;
+import funkin.modding.module.Module;
+import Std;
+
+class SillyHealthbar extends Module
+{
+	public function new()
+    {
+        super('silly-Healthbar');
+    }    
+
+    var isSilly:Bool = false;
+    var firstLoad:Bool = true;
+
+    var bar:FunkinSprite;
+
+    var iconOpp:FlxSprite;
+    var iconP:FlxSprite;
+
+    var realBar:FlxBar;
+    var oppBar:FlxBar;
+    var oppHealth:Float = 1;
+
+    var healthLerp:Float = Constants.HEALTH_STARTING;
+
+    var huds:Array<Dynamic>;
+
+    public override function onCountdownStart(ev:ScriptEvent):Void {
+        super.onCountdownStart(ev);
+        if (PlayState.instance == null) return;
+
+        isSilly = PlayState.instance.currentSong.id == 'silly-billy';
+
+        if (isSilly && firstLoad)
+        {
+            HealthIcon.BOP_SCALE = 0;
+
+            var game = PlayState.instance;
+
+            game.iconP1.autoUpdate = false;
+
+            bar = FunkinSprite.create(0, 0, 'Bar/Silly_Healthbar');
+            bar.zIndex = 900;
+            bar.cameras = [game.camHUD];
+            bar.scale.set(0.5,0.5);
+            bar.updateHitbox();
+            bar.screenCenter();
+            bar.x -= 250;
+            bar.y = Preferences.downscroll ? (game.healthBarBG.y - (bar.height / 2)) - 15 + 25 : (game.healthBarBG.y - (bar.height / 2)) - 15;
+            game.add(bar);
+
+            realBar = new FlxBar(0, 0, FlxBarFillDirection.LEFT_TO_RIGHT, 327.805, 32, this, 'healthLerp', 0, 2);
+            realBar.zIndex = 899;
+            realBar.cameras = [game.camHUD];
+            realBar.createGradientBar([0xFF000000, 0xFF000000], [0xFF1565C0, 0xFFFFFFFF], 1, 90);
+            realBar.updateBar();
+            realBar.setPosition(420, bar.y + 140);
+            game.add(realBar);
+
+            oppBar = new FlxBar(0, 0, FlxBarFillDirection.RIGHT_TO_LEFT, 330.805, 32, this, 'healthLerp', 0, 2);
+            oppBar.zIndex = 898;
+            oppBar.cameras = [game.camHUD];
+            oppBar.createGradientBar([0xFF000000, 0xFF000000], [0xFF8A0101, 0xFF000000], 1, 90);
+            oppBar.updateBar();
+            oppBar.setPosition(405 - oppBar.width - 25, bar.y + 145);
+            game.add(oppBar);
+
+            game.iconP1.zIndex = 902;
+            game.iconP1.setPosition(400, (bar.y + (bar.height / 2) - (game.iconP1.height / 2)));
+            game.iconP1.flipX = false;
+
+            //iconP = new FlxSprite().loadGraphic(Paths.image("icons/bficon"));
+            //iconP.loadGraphic(Paths.image("icons/bficon"), true, Math.floor(iconP.width / 2), Math.floor(iconP.height));
+            //iconP.animation.add('bf', [0, 1], 0, false, true);
+            //iconP.animation.play('bf');
+            //iconP.cameras = [game.camHUD];
+            //iconP.setPosition(400, (bar.y + (bar.height / 2) - (iconP.height / 2)));
+            //iconP.flipX = true;
+
+            iconOpp = new FlxSprite();
+            iconOpp.loadGraphic(Paths.image("icons/billyicon"));
+            iconOpp.loadGraphic(Paths.image("icons/billyicon"), true, Math.floor(iconOpp.width / 5), Math.floor(iconOpp.height));
+            iconOpp.zIndex = 901;
+            iconOpp.animation.add('0', [0], 0, false, false);
+            iconOpp.animation.add('1', [1], 0, false, false);
+            iconOpp.animation.add('2', [2], 0, false, false);
+            iconOpp.animation.add('3', [3], 0, false, false);
+            iconOpp.animation.add('4', [4], 0, false, false);
+            iconOpp.animation.play('1');
+            iconOpp.cameras = [game.camHUD];
+            iconOpp.setPosition(405 - iconOpp.width, (bar.y + (bar.height / 2) - (iconOpp.height / 2)));     
+            game.add(iconOpp);      
+
+            iconOpp.centerOffsets(); 
+
+            game.refresh();
+
+            game.healthBarBG.visible = false;
+            game.healthBar.visible = false;
+            game.iconP2.visible = false;
+            game.scoreText.y = Preferences.downscroll ? game.scoreText.y + 35 : game.scoreText.y + 15;
+
+            huds = [bar, game.iconP1, iconOpp, realBar, oppBar];      
+        }        
+    }   
+    
+    public function onSongStart(event):Void 
+    {
+        super.onSongStart(event);      
+
+        firstLoad = false;
+        if (isSilly) iconOpp.animation.play('1');
+    }
+    
+    public function onUpdate(eve):Void {
+        super.onUpdate(eve);
+        if (PlayState.instance == null) return;
+        
+        if (isSilly) {
+            var game = PlayState.instance;
+
+            updateHealth();
+            realBar.value = game.healthBar.value;
+            oppBar.value = 2 - game.healthBar.value;
+
+            game.scoreText.x = bar.x + 600;
+            
+            if (game.health < 0.4)
+                game.iconP1.animation.play('losing');
+            else
+                game.iconP1.animation.play('idle');
+        }
+    }
+
+    public function onSongEvent(event):Void 
+	{
+		super.onSongEvent(event);
+        if (PlayState.instance == null) return;
+
+		if (event.eventData.eventKind == 'SillyEvents') {
+			var ev = event.eventData.value;
+
+			//alt sing when small
+			switch (Std.int(ev.sillyType))
+			{
+                case 4: //hide huds
+                    for (h in huds) { 
+                        FlxTween.tween(h, {alpha: 0}, 2, {ease: FlxEase.quadIn});
+                    }
+				case 8: //icon change
+                    iconOpp.animation.play(Std.string(ev.intVal));
+			}                
+		}
+	}
+
+    function updateHealth() {
+        if (isSilly) {
+            if (PlayState.instance.isBotPlayMode)
+            {
+              healthLerp = Constants.HEALTH_MAX;
+            }
+            else
+            {
+              healthLerp = FlxMath.lerp(healthLerp, PlayState.instance.health, 0.15);
+            }
+        }
+    }
+
+    public function onStateChangeEnd(event):Void 
+	{
+		super.onStateChangeEnd(event);
+
+        if (!Std.isOfType(event.targetState, PlayState)) firstLoad = true;
+	}
+}
